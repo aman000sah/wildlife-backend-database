@@ -23,6 +23,7 @@ class Report(Base):
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     species_reported = Column(String, nullable=False)
     image_url = Column(String, nullable=True)
+    image_hash = Column(String, nullable=True, unique=True)
     condition = Column(Enum(ConditionEnum), default=ConditionEnum.normal)
     status = Column(Enum(StatusEnum), default=StatusEnum.pending)
     latitude = Column(Float, nullable=False)
