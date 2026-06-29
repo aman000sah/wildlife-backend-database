@@ -25,35 +25,39 @@ async def submit_report(
     image_url = None
     ml_result = None
 
-    # Process image if provided
     if image:
         image_bytes = await image.read()
 
-        # Check for duplicate image
         image_hash = generate_image_hash(image_bytes)
         existing = db.query(Report).filter(Report.image_hash == image_hash).first()
         if existing:
             raise HTTPException(status_code=400, detail="Duplicate image submission detected")
 
-        # Save image locally
         image_url = save_image_locally(image_bytes, image.filename or "upload.jpg")
 
-        # Run YOLOv8 detection
         ml_result = detect_wildlife(image_bytes)
 
-    # Determine report status based on ML result
+    # ── Determine the species that actually gets stored ─────────────────────
+    # ✅ When an image is provided AND the model successfully detected
+    # something, the ML result is the single source of truth for
+    # species_reported — the client-submitted dropdown value is ignored
+    # in that case. The client-submitted value is only used when no image
+    # was attached, or detection found nothing usable in the photo.
+    final_species = species_reported
+    if ml_result and ml_result.get("species_detected"):
+        final_species = ml_result["species_detected"]
+
     if ml_result:
         if ml_result["is_verified"]:
-            status = StatusEnum.pending  # verified by ML, waiting admin approval
+            status = StatusEnum.pending
         else:
-            status = StatusEnum.suspicious  # ML couldn't verify
+            status = StatusEnum.suspicious
     else:
-        status = StatusEnum.pending  # no image submitted
+        status = StatusEnum.pending
 
-    # Create report
     new_report = Report(
         user_id=current_user.user_id,
-        species_reported=species_reported,
+        species_reported=final_species,
         condition=condition,
         latitude=latitude,
         longitude=longitude,
@@ -65,7 +69,6 @@ async def submit_report(
     db.commit()
     db.refresh(new_report)
 
-    # Save ML detection result
     if ml_result:
         detection = MLDetection(
             report_id=new_report.report_id,

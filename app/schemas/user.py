@@ -11,7 +11,9 @@ class UserRegister(BaseModel):
     email: EmailStr
     phone: Optional[str] = None
     password: str
-    role: UserRole = UserRole.user
+    # NOTE: role intentionally NOT accepted here. Every self-registered
+    # account is created as a plain "user" — admin accounts are granted
+    # only via a direct SQL query in pgAdmin.
 
 class UserLogin(BaseModel):
     email: EmailStr

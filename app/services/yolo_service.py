@@ -5,15 +5,29 @@ from PIL import Image
 from ultralytics import YOLO
 import io
 
-# Load YOLOv8 model (downloads automatically on first run)
-MODEL_PATH = "yolov8n.pt"  # nano model, fastest
+# Load YOLOv8 model — this is your teammate's custom-trained wildlife
+# model, NOT the stock Ultralytics download, even though it shares the
+# filename "my_model.pt".
+MODEL_PATH = "my_model.pt"
+
+if not os.path.exists(MODEL_PATH):
+    raise FileNotFoundError(
+        f"Custom wildlife model not found at {MODEL_PATH}. "
+        f"Make sure my_model.pt is placed next to yolo_service.py."
+    )
+
 model = YOLO(MODEL_PATH)
 
-# Wildlife species we care about
-WILDLIFE_CLASSES = [
-    "bird", "cat", "dog", "horse", "sheep", "cow",
-    "elephant", "bear", "zebra", "giraffe"
-]
+# ✅ Fully dynamic — derived directly from the loaded model, every time.
+# This was previously a hardcoded 10-item COCO-style list, which silently
+# filtered out every species your custom model actually knows (tiger,
+# leopard, wolf, rhinoceros, etc.) because they weren't in that list.
+# Since this model is wildlife-only, every class it knows IS a wildlife
+# class — no manual allow-list needed.
+WILDLIFE_CLASSES = list(model.names.values())
+
+print(f"✅ Loaded YOLO model from {MODEL_PATH}")
+print(f"✅ Model classes ({len(WILDLIFE_CLASSES)}): {WILDLIFE_CLASSES}")
 
 CONFIDENCE_THRESHOLD = 0.40  # 40% minimum confidence
 
@@ -41,8 +55,9 @@ def detect_wildlife(image_bytes: bytes) -> dict:
                 class_id = int(box.cls[0])
                 class_name = model.names[class_id]
 
-                # Check if detected class is a wildlife animal
-                if class_name in WILDLIFE_CLASSES and confidence > highest_confidence:
+                # ✅ No allow-list filter — every class this model can
+                # output is already a wildlife class.
+                if confidence > highest_confidence:
                     highest_confidence = confidence
                     best_detection = {
                         "species_detected": class_name,
