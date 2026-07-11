@@ -30,3 +30,22 @@ class Alert(Base):
 
     report = relationship("Report", backref="alert")
     approver = relationship("User", foreign_keys=[approved_by])
+
+    # ── Convenience proxies ────────────────────────────────────────────────────
+    # Let AlertResponse read location/species/condition straight off the
+    # Alert object (via from_attributes) without a separate Report query.
+    @property
+    def latitude(self):
+        return self.report.latitude if self.report else None
+
+    @property
+    def longitude(self):
+        return self.report.longitude if self.report else None
+
+    @property
+    def species(self):
+        return self.report.species_reported if self.report else None
+
+    @property
+    def condition(self):
+        return self.report.condition if self.report else None

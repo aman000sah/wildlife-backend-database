@@ -23,6 +23,11 @@ class AlertResponse(BaseModel):
     message: Optional[str]
     created_at: datetime
     approved_by: Optional[int]
+    # ── Proxied from Report (via Alert.report relationship) ────────────────────
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    species: Optional[str] = None
+    condition: Optional[str] = None
 
     class Config:
         from_attributes = True
